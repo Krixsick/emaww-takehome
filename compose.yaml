@@ -1,0 +1,30 @@
+services:
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+  app:
+    build: .
+    environment:
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - type: bind
+        source: ${XML_FILE:-./config.xml}
+        target: /input/config.xml
+        read_only: true
+        bind:
+          create_host_path: false
+
+volumes:
+  redis-data:
